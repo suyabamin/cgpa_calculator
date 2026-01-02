@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>7 College CGPA Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --bg: linear-gradient(135deg,#ff6a00,#ff3cac,#ff5e7e,#ff87c3);
+  --card: rgba(255,255,255,.3);
+  --text:#111;
+  --input: rgba(255,255,255,.85);
+  --border: rgba(255,255,255,.4);
+}
+
+.dark{
+  --bg: linear-gradient(135deg,#290c2f,#63032b,#3e243f,#5e133c);
+  --card: rgba(0,0,0,.55);
+  --text:#fff;
+  --input: rgba(255,255,255,.12);
+  --border: rgba(255,255,255,.25);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Segoe UI,sans-serif;
+  background:var(--bg);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  color:var(--text);
+  transition:.4s;
+}
+
+.app{
+  width:100%;
+  max-width:1000px;
+  background:var(--card);
+  backdrop-filter:blur(20px);
+  border-radius:22px;
+  padding:28px;
+  border:1px solid var(--border);
+  box-shadow:0 30px 60px rgba(0,0,0,.35);
+  display:flex;
+  flex-direction:column;
+}
+
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+h1{
+  font-size:1.9rem;
+  font-weight:800;
+  color:#e91e63; /* solid color title */
+}
+
+button{
+  border:none;
+  padding:10px 18px;
+  border-radius:25px;
+  cursor:pointer;
+  font-weight:bold;
+  color:white;
+  background:linear-gradient(135deg,#ff3cac,#ff5e7e,#e91e63);
+}
+
+button:hover{transform:scale(1.05)}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+  margin-top:22px;
+}
+
+label{font-weight:bold;font-size:.9rem}
+
+input{
+  width:100%;
+  padding:13px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:var(--input);
+  outline:none;
+  font-size:1rem;
+  transition:.3s;
+}
+
+input:focus{
+  box-shadow:0 0 15px #ff3cac;
+  transform:scale(1.03);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:25px;
+}
+
+th{
+  background:linear-gradient(135deg,#ff3cac,#e91e63);
+  color:white;
+  padding:12px;
+}
+
+td{
+  padding:10px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:22px;
+}
+
+.actions button{
+  flex:1;
+  min-width:160px;
+  background:linear-gradient(135deg,#ff3cac,#e91e63);
+}
+
+.result{
+  margin-top:25px;
+  padding:20px;
+  border-radius:18px;
+  background:linear-gradient(135deg,#ff3cac,#e91e63);
+  color:white;
+  text-align:center;
+  font-size:1.15rem;
+}
+
+.dedication{
+  text-align:center;
+  font-size:0.8rem;
+  color:#ff3cac;
+  margin-top:18px;
+  font-style:italic;
+}
+
+.lang-toggle{
+  display:flex;
+  gap:10px;
+}
+
+.lang-toggle button{
+  padding:5px 12px;
+  border-radius:12px;
+  font-size:0.8rem;
+  font-weight:bold;
+  flex:none;
+  background:linear-gradient(135deg,#e91e63,#ff3cac);
+  transition:.3s;
+}
+
+.lang-toggle button:hover{
+  transform:scale(1.1);
+}
+
+@media(max-width:600px){
+  h1{font-size:1.5rem}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1 id="appTitle">7 College CGPA Calculator</h1>
+    <div class="lang-toggle">
+      <button onclick="toggleLang()" id="langBtn">English</button>
+      <button onclick="toggleTheme()">🌙 Theme</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label id="prevCgpaLabel">Previous CGPA</label>
+      <input id="prevCgpa" type="number" step="0.01">
+    </div>
+    <div>
+      <label id="prevCreditsLabel">Completed Credits</label>
+      <input id="prevCredits" type="number">
+    </div>
+  </div>
+
+  <table id="subjectTable">
+    <tr>
+      <th id="marksHeader">Marks (%)</th>
+      <th id="creditHeader">Credit</th>
+      <th id="gradeHeader">Grade</th>
+      <th id="pointHeader">Point</th>
+    </tr>
+  </table>
+
+  <div class="actions">
+    <button onclick="addSubject()" id="addSubjectBtn">➕ Add Subject</button>
+    <button onclick="calculate()" id="calculateBtn">🎓 Calculate</button>
+    <button onclick="downloadPDF()" id="pdfBtn">📄 Download PDF</button>
+  </div>
+
+  <div class="result" id="result">
+    Enter data to calculate CGPA
+  </div>
+
+  <div class="dedication">Dedicated to Urmi Akter</div>
+</div>
+
+<script>
+let currentLang='en';
+
+const texts={
+  en:{
+    prevCgpa:'Previous CGPA',
+    prevCredits:'Completed Credits',
+    marks:'Marks (%)',
+    credit:'Credit',
+    grade:'Grade',
+    point:'Point',
+    add:'➕ Add Subject',
+    calc:'🎓 Calculate',
+    pdf:'📄 Download PDF',
+    result:'Enter data to calculate CGPA',
+    title:'7 College CGPA Calculator',
+    langBtn:'English'
+  },
+  bn:{
+    prevCgpa:'পূর্ববর্তী জিপিএ',
+    prevCredits:'সম্পন্ন ক্রেডিট',
+    marks:'মার্ক (%)',
+    credit:'ক্রেডিট',
+    grade:'গ্রেড',
+    point:'পয়েন্ট',
+    add:'➕ বিষয় যোগ করুন',
+    calc:'🎓 হিসাব করুন',
+    pdf:'📄 পিডিএফ ডাউনলোড',
+    result:'জিপিএ হিসাব করতে তথ্য দিন',
+    title:'৭ কলেজ জিপিএ ক্যালকুলেটর',
+    langBtn:'বাংলা'
+  }
+};
+
+function toggleLang(){
+  currentLang = currentLang==='en'?'bn':'en';
+  document.getElementById('prevCgpaLabel').innerText=texts[currentLang].prevCgpa;
+  document.getElementById('prevCreditsLabel').innerText=texts[currentLang].prevCredits;
+  document.getElementById('marksHeader').innerText=texts[currentLang].marks;
+  document.getElementById('creditHeader').innerText=texts[currentLang].credit;
+  document.getElementById('gradeHeader').innerText=texts[currentLang].grade;
+  document.getElementById('pointHeader').innerText=texts[currentLang].point;
+  document.getElementById('addSubjectBtn').innerText=texts[currentLang].add;
+  document.getElementById('calculateBtn').innerText=texts[currentLang].calc;
+  document.getElementById('pdfBtn').innerText=texts[currentLang].pdf;
+  document.getElementById('result').innerText=texts[currentLang].result;
+  document.getElementById('appTitle').innerText=texts[currentLang].title;
+  document.getElementById('langBtn').innerText=currentLang==='en'?'English':'বাংলা';
+}
+
+function grade(m){
+  if(m>=80) return ["A+",4];
+  if(m>=75) return ["A",3.75];
+  if(m>=70) return ["A-",3.5];
+  if(m>=65) return ["B+",3.25];
+  if(m>=60) return ["B",3];
+  if(m>=55) return ["B-",2.75];
+  if(m>=50) return ["C+",2.5];
+  if(m>=45) return ["C",2.25];
+  if(m>=40) return ["D",2];
+  return ["F",0];
+}
+
+function addSubject(){
+  let r=subjectTable.insertRow();
+  r.innerHTML=`
+    <td><input type="number" onchange="update(this)"></td>
+    <td><input type="number" step="0.5"></td>
+    <td>-</td>
+    <td>-</td>`;
+}
+
+function update(i){
+  let g=grade(+i.value);
+  let r=i.parentElement.parentElement;
+  r.cells[2].innerText=g[0];
+  r.cells[3].innerText=g[1];
+}
+
+function calculate(){
+  let pc=+prevCredits.value||0;
+  let pg=+prevCgpa.value||0;
+  let tc=0,tp=0;
+
+  [...subjectTable.rows].slice(1).forEach(r=>{
+    let c=+r.cells[1].children[0].value;
+    let p=+r.cells[3].innerText;
+    if(c){tc+=c;tp+=c*p;}
+  });
+
+  let gpa=tp/tc||0;
+  let cgpa=((pg*pc)+(gpa*tc))/(pc+tc||1);
+
+  result.innerHTML=
+    `Current GPA: <b>${gpa.toFixed(2)}</b><br>
+     Final CGPA: <b>${cgpa.toFixed(2)}</b>`;
+}
+
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+}
+
+/* --------- DECORATED PDF --------- */
+function downloadPDF(){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+
+  const pink=[233,30,99];
+
+  pdf.setFillColor(...pink);
+  pdf.rect(0,0,210,30,"F");
+
+  pdf.setTextColor(255,255,255);
+  pdf.setFontSize(18);
+  pdf.text(texts[currentLang].title,105,18,{align:"center"});
+
+  pdf.setFontSize(11);
+  pdf.text("Academic Result Sheet",105,26,{align:"center"});
+
+  pdf.setTextColor(60,60,60);
+  pdf.setFontSize(12);
+
+  let y=45;
+  pdf.text(`Previous CGPA : ${prevCgpa.value||"N/A"}`,20,y);
+  y+=10;
+  pdf.text(`Completed Credits : ${prevCredits.value||"N/A"}`,20,y);
+
+  y+=10;
+  pdf.setDrawColor(...pink);
+  pdf.line(20,y,190,y);
+
+  y+=15;
+  pdf.setFillColor(255,228,236);
+  pdf.rect(20,y,170,35,"F");
+
+  let nums=(result.innerText.match(/[\d.]+/g))||["0.00","0.00"];
+
+  pdf.setTextColor(136,14,79);
+  pdf.setFontSize(14);
+  pdf.text("Current GPA",45,y+15);
+  pdf.text("Final CGPA",125,y+15);
+
+  pdf.setFontSize(18);
+  pdf.text(nums[0],55,y+30);
+  pdf.text(nums[1],135,y+30);
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(120,120,120);
+  pdf.text("Generated on: "+new Date().toLocaleDateString(),105,280,{align:"center"});
+
+  pdf.save("7_College_CGPA_Result.pdf");
+}
+
+addSubject();addSubject();addSubject();
+</script>
+
+</body>
+</html>
